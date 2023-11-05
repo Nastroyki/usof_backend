@@ -4,63 +4,59 @@ CREATE USER 'mcherednyc'@'localhost' IDENTIFIED BY 'securepass';
 GRANT ALL PRIVILEGES ON ucode_usof_backend.* TO 'mcherednyc'@'localhost';
 USE ucode_usof_backend;
 
--- Create the user table
-CREATE TABLE user (
+CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    login VARCHAR(255) UNIQUE,
-    password VARCHAR(255),
+    login VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255),
-    email VARCHAR(255),
+    email VARCHAR(255) NOT NULL,
     profile_picture VARCHAR(255),
     rating INT DEFAULT 0,
     role ENUM('admin', 'user') DEFAULT 'user'
 );
 
--- Create the post table
-CREATE TABLE post (
+CREATE TABLE posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    author INT,
-    title VARCHAR(255),
-    publish_date DATETIME,
-    status ENUM('active', 'inactive'),
-    content TEXT,
-    FOREIGN KEY (author) REFERENCES user(id)
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    publish_date DATETIME NOT NULL,
+    status ENUM('active', 'solved'),
+    content TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Create the category table
-CREATE TABLE category (
+CREATE TABLE tags (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255),
+    title VARCHAR(255) NOT NULL,
     description TEXT
 );
 
--- Create the comment table
-CREATE TABLE comment (
+CREATE TABLE comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    author INT,
+    user_id INT,
+    post_id INT,
     publish_date DATETIME,
     content TEXT,
-    FOREIGN KEY (author) REFERENCES user(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (post_id) REFERENCES posts(id)
 );
 
--- Create the like table
 CREATE TABLE likes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    author INT,
+    user_id INT,
     publish_date DATETIME,
-    entity_id INT,
-    entity_type ENUM('post', 'comment'),
+    post_id INT,
+    comment_id INT,
     type ENUM('like', 'dislike'),
-    FOREIGN KEY (author) REFERENCES user(id),
-    FOREIGN KEY (entity_id) REFERENCES post(id) ON DELETE CASCADE,
-    FOREIGN KEY (entity_id) REFERENCES comment(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (post_id) REFERENCES posts(id),
+    FOREIGN KEY (comment_id) REFERENCES comments(id)
 );
 
--- Create the post_category table for many-to-many relationship between post and category
-CREATE TABLE post_category (
+CREATE TABLE post_tag (
     post_id INT,
-    category_id INT,
-    PRIMARY KEY (post_id, category_id),
-    FOREIGN KEY (post_id) REFERENCES post(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE
+    tag_id INT,
+    PRIMARY KEY (post_id, tag_id),
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
