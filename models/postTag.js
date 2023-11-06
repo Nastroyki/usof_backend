@@ -1,4 +1,5 @@
 const Model = require('./model').Model;
+const Posts = require('./post');
 const db = require('./model').db;
 
 // CREATE TABLE post_tag (
@@ -18,26 +19,22 @@ class PostTag extends Model {
 
     static async findByPostId(post_id) {
         let results = await super.findBy('post_id', post_id, 'post_tag');
-        let postTags = [];
+        let posts = [];
         for (let i = 0; i < results.length; i++) {
-            let postTag = new PostTag();
-            postTag.post_id = results[i].post_id;
-            postTag.tag_id = results[i].tag_id;
-            postTags.push(postTag);
+            let post = await Posts.findById(results[i].post_id);
+            posts.push(post);
         }
-        return postTags;
+        return posts;
     }
 
     static async findByTagId(tag_id) {
         let results = await super.findBy('tag_id', tag_id, 'post_tag');
-        let postTags = [];
+        let posts = [];
         for (let i = 0; i < results.length; i++) {
-            let postTag = new PostTag();
-            postTag.post_id = results[i].post_id;
-            postTag.tag_id = results[i].tag_id;
-            postTags.push(postTag);
+            let post = await Posts.findById(results[i].post_id);
+            posts.push(post);
         }
-        return postTags;
+        return posts;
     }
 
     static async delete(post_id, tag_id) {

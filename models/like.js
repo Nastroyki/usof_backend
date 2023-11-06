@@ -69,6 +69,22 @@ class Like extends Model {
         return likes;
     }
 
+    static async findByCommentId(comment_id) {
+        let results = await super.findBy('comment_id', comment_id, 'likes');
+        let likes = [];
+        for (let i = 0; i < results.length; i++) {
+            let like = new Like();
+            like.id = results[i].id;
+            like.user_id = results[i].user_id;
+            like.publish_date = results[i].publish_date;
+            like.post_id = results[i].post_id;
+            like.comment_id = results[i].comment_id;
+            like.type = results[i].type;
+            likes.push(like);
+        }
+        return likes;
+    }
+
     static async postLikesCount(post_id) {
         let results = await this.findByPostId(post_id);
         let likes = 0;
@@ -82,6 +98,28 @@ class Like extends Model {
 
     static async postDislikesCount(post_id) {
         let results = await this.findByPostId(post_id);
+        let dislikes = 0;
+        for (let i = 0; i < results.length; i++) {
+            if (results[i].type == 'dislike') {
+                dislikes++;
+            }
+        }
+        return dislikes;
+    }
+
+    static async commentLikesCount(comment_id) {
+        let results = await this.findByCommentId(comment_id);
+        let likes = 0;
+        for (let i = 0; i < results.length; i++) {
+            if (results[i].type == 'like') {
+                likes++;
+            }
+        }
+        return likes;
+    }
+
+    static async commentDislikesCount(comment_id) {
+        let results = await this.findByCommentId(comment_id);
         let dislikes = 0;
         for (let i = 0; i < results.length; i++) {
             if (results[i].type == 'dislike') {
@@ -125,6 +163,30 @@ class Like extends Model {
                     if (results.length != 0) {
                         const deleteQ = `DELETE FROM likes WHERE user_id=? AND post_id=?`;
                         db.query(deleteQ, [user_id, post_id], (err) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve();
+                            }
+                        });
+                    } else {
+                        resolve();
+                    }
+                }
+            });
+        });
+    }
+
+    static async deleteUserLikeComment(user_id, comment_id) {
+        const selectQ = `SELECT * FROM likes WHERE user_id=? AND comment_id=?`;
+        return new Promise((resolve, reject) => {
+            db.query(selectQ, [user_id, comment_id], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    if (results.length != 0) {
+                        const deleteQ = `DELETE FROM likes WHERE user_id=? AND comment_id=?`;
+                        db.query(deleteQ, [user_id, comment_id], (err) => {
                             if (err) {
                                 reject(err);
                             } else {
