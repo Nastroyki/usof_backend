@@ -1,4 +1,5 @@
 const Model = require('./model').Model;
+const db = require('./model').db;
 
 const Like = require('./like');
 const Comment = require('./comment');
@@ -26,6 +27,36 @@ class Post extends Model {
 
     static async findAll() {
         let results = await super.findAll('posts');
+        let posts = [];
+        for (let i = 0; i < results.length; i++) {
+            let post = new Post();
+            post.id = results[i].id;
+            post.user_id = results[i].user_id;
+            post.title = results[i].title;
+            post.publish_date = results[i].publish_date;
+            post.status = results[i].status;
+            post.content = results[i].content;
+            posts.push(post);
+        }
+        return posts;
+    }
+
+    static async findPostsPage(page, limit, tag = 0, status = '', sort = 'publish_date', order = 'DESC') {
+        let query = `SELECT * FROM posts`;
+        if (status !== '') {
+            query += ` WHERE status = '${status}'`;
+        }
+        if (tag !== 0) {
+            query += ` AND id IN (SELECT post_id FROM post_tag WHERE tag_id = ${tag})`;
+        }
+        if (sort === 'rating') {
+            query += ` ORDER BY (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.type = 'like') - (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.type = 'dislike') ${order}`;
+        } else {
+            query += ` ORDER BY ${sort} ${order}`;
+        }
+        query += ` LIMIT ${(page - 1) * limit}, ${limit}`;
+
+        let results = await db.query(query);
         let posts = [];
         for (let i = 0; i < results.length; i++) {
             let post = new Post();
@@ -82,7 +113,7 @@ class Post extends Model {
             await this.deleteById(posts[i].id);
         }
     }
-    
+
     static async save(post) {
         await super.save(post, 'posts');
         return await this.findById(post.id);

@@ -12,8 +12,15 @@ const auth = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
     try {
-        const posts = await Post.findAll();
-        if(posts.length == 0){
+        const { page, tag, status, sort, order } = req.query;
+        let limit = 10;
+        if (!page) { page = 1; }
+        if (!tag) { tag = 0; }
+        if (!status) { status = ''; }
+        if (!sort) { sort = 'publish_date'; }
+        if (!order) { order = 'DESC'; }
+        const posts = await Post.findPostsPage(page, limit, tag, status, sort, order);
+        if (posts.length == 0) {
             return res.status(404).send("Posts not found");
         }
         res.status(200).json(posts);
@@ -25,7 +32,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if(post.id == 0){
+        if (post.id == 0) {
             return res.status(404).send("Post not found");
         }
         res.status(200).json(post);
@@ -37,7 +44,7 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/comments', async (req, res) => {
     try {
         const comments = await Comment.findByPostId(req.params.id);
-        if(comments.length == 0){
+        if (comments.length == 0) {
             return res.status(404).send("Comments not found");
         }
     } catch (err) {
@@ -69,7 +76,7 @@ router.post('/:id/comments', auth, async (req, res) => {
 router.get('/:id/tags', async (req, res) => {
     try {
         const tags = await PostTag.findByPostId(req.params.id);
-        if(tags.length == 0){
+        if (tags.length == 0) {
             return res.status(404).send("Tags not found");
         }
         res.status(200).json(tags);
@@ -98,11 +105,11 @@ router.post('/', auth, async (req, res) => {
             return res.status(400).send("All input is required");
         }
         for (let i = 0; i < tags.length; i++) {
-            if(tags[i].id == 0 || tags[i].id == null || tags[i].id == undefined){
+            if (tags[i].id == 0 || tags[i].id == null || tags[i].id == undefined) {
                 return res.status(400).send(`Tag id:${tags[i].id} not found`);
             }
             id = await Tag.findById(tags[i].id);
-            if(id == 0){
+            if (id == 0) {
                 return res.status(400).send(`Tag id:${tags[i].id} not found`);
             }
         }
@@ -154,20 +161,20 @@ router.patch('/:id', auth, async (req, res) => {
             return res.status(400).send("All input is required");
         }
         for (let i = 0; i < tags.length; i++) {
-            if(tags[i].id == 0 || tags[i].id == null || tags[i].id == undefined){
+            if (tags[i].id == 0 || tags[i].id == null || tags[i].id == undefined) {
                 return res.status(400).send(`Tag id:${tags[i].id} not found`);
             }
             id = await Tag.findById(tags[i].id);
-            if(id == 0){
+            if (id == 0) {
                 return res.status(400).send(`Tag id:${tags[i].id} not found`);
             }
         }
 
         const post = await Post.findById(post_id);
-        if(post.id == 0){
+        if (post.id == 0) {
             return res.status(404).send("Post not found");
         }
-        if(!(post.user_id == req.user.id || req.user.role == 'admin')){
+        if (!(post.user_id == req.user.id || req.user.role == 'admin')) {
             return res.status(403).send("Access denied");
         }
 
@@ -197,10 +204,10 @@ router.patch('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if(post.id == 0){
+        if (post.id == 0) {
             return res.status(404).send("Post not found");
         }
-        if(!(post.user_id == req.user.id || req.user.role == 'admin')){
+        if (!(post.user_id == req.user.id || req.user.role == 'admin')) {
             return res.status(403).send("Access denied");
         }
         await Post.deleteById(req.params.id);
@@ -213,10 +220,10 @@ router.delete('/:id', auth, async (req, res) => {
 router.delete('/:id/like', auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if(post.id == 0){
+        if (post.id == 0) {
             return res.status(404).send("Post not found");
         }
-        if(!(post.user_id == req.user.id || req.user.role == 'admin')){
+        if (!(post.user_id == req.user.id || req.user.role == 'admin')) {
             return res.status(403).send("Access denied");
         }
         await Like.deleteUserLike(req.user.id, req.params.id);
