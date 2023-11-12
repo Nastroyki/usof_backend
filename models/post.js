@@ -54,10 +54,33 @@ class Post extends Model {
         return post;
     }
 
+    static async findByUserId(user_id) {
+        let results = await super.findBy('user_id', user_id, 'posts');
+        let posts = [];
+        for (let i = 0; i < results.length; i++) {
+            let post = new Post();
+            post.id = results[i].id;
+            post.user_id = results[i].user_id;
+            post.title = results[i].title;
+            post.publish_date = results[i].publish_date;
+            post.status = results[i].status;
+            post.content = results[i].content;
+            posts.push(post);
+        }
+        return posts;
+    }
+
     static async deleteById(id) {
         Like.deleteByPostId(id);
         Comment.deleteByPostId(id);
         await super.delete(id, 'posts');
+    }
+
+    static async deleteByUserId(user_id) {
+        let posts = await this.findByUserId(user_id);
+        for (let i = 0; i < posts.length; i++) {
+            await this.deleteById(posts[i].id);
+        }
     }
     
     static async save(post) {

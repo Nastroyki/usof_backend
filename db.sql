@@ -10,6 +10,8 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255),
     email VARCHAR(255) NOT NULL,
+    email_code VARCHAR(255),
+    reset_code VARCHAR(255),
     profile_picture VARCHAR(255),
     rating INT DEFAULT 0,
     role ENUM('admin', 'user') DEFAULT 'user'
@@ -59,4 +61,14 @@ CREATE TABLE post_tag (
     PRIMARY KEY (post_id, tag_id),
     FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+CREATE TABLE comment_answer (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    comment_id INT,
+    publish_date DATETIME,
+    content TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (comment_id) REFERENCES comments(id)
 );

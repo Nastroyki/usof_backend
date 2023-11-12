@@ -1,6 +1,7 @@
 const express = require('express');
 
 const Comment = require("../models/comment");
+const CommentAnswer = require("../models/commentAnswer");
 const Like = require("../models/like");
 
 
@@ -28,6 +29,39 @@ router.get('/:id/likes', async (req, res) => {
             dislikes: await Like.commentDislikesCount(req.params.id)
         }
         res.status(200).json(result);
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+router.get('/:id/answers', async (req, res) => {
+    try {
+        const commentAnswers = await CommentAnswer.findByCommentId(req.params.id);
+        if(commentAnswers.length == 0){
+            return res.status(404).send("Comment answers not found");
+        }
+        res.status(200).json(commentAnswers);
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+router.post('/:id/answer', auth, async (req, res) => {
+    try {
+        const { content } = req.body;
+
+        if (!content) {
+            return res.status(400).send("All input is required");
+        }
+
+        const commentAnswer = await CommentAnswer.save({
+            user_id: req.user.id,
+            comment_id: req.params.id,
+            publish_date: new Date(),
+            content
+        });
+
+        res.status(201).json(commentAnswer);
     } catch (err) {
         console.log(err);
     }

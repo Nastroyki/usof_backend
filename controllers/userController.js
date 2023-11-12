@@ -1,6 +1,34 @@
 const express = require('express');
 const sharp = require('sharp');
 const User = require("../models/user");
+const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+
+let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+    }
+});
+
+async function wrapedSendMail(mailOptions) {
+    return new Promise((resolve, reject) => {
+
+            transporter.sendMail(mailOptions, function (error, info) {
+                if (error) {
+                    console.log("error is " + error);
+                    resolve(false); // or use rejcet(false) but then you will have to handle errors
+                }
+                else {
+                    console.log('Email sent: ' + info.response);
+                    resolve(true);
+                }
+            });
+   });
+}
+
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -26,7 +54,7 @@ router.get('/:id', async (req, res) => {
         console.log(err);
     }
 });
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     if(req.user.role != 'admin'){
         return res.status(403).send("Access denied");
     }
@@ -71,8 +99,11 @@ router.post('/', async (req, res) => {
         console.log(err);
     }
 });
-router.patch('/avatar', async (req, res) => {
+router.patch('/avatar', auth, async (req, res) => {
     try {
+        if (!req.files) {
+            return res.status(400).send("No files uploaded");
+        }
         const { profile_picture } = req.files;
 
         if (!(profile_picture)) {
@@ -112,8 +143,8 @@ router.patch('/avatar', async (req, res) => {
     }
 });
 
-router.patch('/:id', async (req, res) => {
-    if(!(req.user.role == 'admin' || req.user.id == req.params.id)){
+router.patch('/:id', auth, async (req, res) => {
+    if(!(req.user.role == 'admin' || req.user.user_id == req.params.id)){
         return res.status(403).send("Access denied");
     }
     try {
@@ -123,11 +154,38 @@ router.patch('/:id', async (req, res) => {
         }
         const { login, password, full_name,  email, role } = req.body;
 
+        if(login != user.login){
+            const loginCheck = await User.findByLogin(login);
+            if (loginCheck.id != 0) {
+                return res.status(409).send("User with this login already exist");
+            }
+        }
+
+        if(email != user.email && req.user.role != 'admin'){
+            const emailCheck = await User.findByEmail(email);
+            if (emailCheck.id != 0) {
+                return res.status(409).send("User with this email already exist");
+            }
+            user.email_code = generateCode();
+            let mailOptions = {
+                from: process.env.MAIL_USER,
+                to: email,
+                subject: 'Confirm your new email for USOF',
+                text: 'Your confirmation code is ' + user.email_code
+            };
+            if (!await wrapedSendMail(mailOptions)) {
+                return res.status(500).send("Email sending error");
+            }
+        }
+
+
         user.login = login || user.login;
         user.password = password || user.password;
         user.full_name = full_name || user.full_name;
         user.email = email || user.email;
-        user.role = role || user.role;
+        if(req.user.role == 'admin') {
+            user.role = role || user.role;
+        }
 
         await User.save(user);
         res.status(200).send(user.safe());
@@ -137,8 +195,8 @@ router.patch('/:id', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
-    if (!(req.user.role == 'admin' || req.user.id == req.params.id)) {
+router.delete('/:id', auth, async (req, res) => {
+    if (!(req.user.role == 'admin' || req.user.user_id == req.params.id)) {
         return res.status(403).send("Access denied");
     }
     try {

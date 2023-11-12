@@ -1,7 +1,7 @@
 const Model = require('./model').Model;
-const db = require('./model').db;
 
 const Like = require('./like');
+const CommentAnswer = require('./commentAnswer');
 
 // CREATE TABLE comments (
 //     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -50,36 +50,39 @@ class Comment extends Model {
         return comments;
     }
 
+    static async findByUserId(user_id) {
+        let results = await super.findBy('user_id', user_id, 'comments');
+        let comments = [];
+        for (let i = 0; i < results.length; i++) {
+            let comment = new Comment();
+            comment.id = results[i].id;
+            comment.user_id = results[i].user_id;
+            comment.post_id = results[i].post_id;
+            comment.publish_date = results[i].publish_date;
+            comment.content = results[i].content;
+            comments.push(comment);
+        }
+        return comments;
+    }
+
     static async deleteById(id) {
         Like.deleteByCommentId(id);
+        CommentAnswer.deleteByCommentId(id);
         await super.delete(id, 'comments');
     }
 
     static async deleteByPostId(post_id) {
-        const selectQ = `SELECT * FROM comments WHERE post_id=?`;
-        return new Promise((resolve, reject) => {
-            db.query(selectQ, [post_id], (err, results) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    for (let i = 0; i < results.length; i++) {
-                        Like.deleteByCommentId(results[i].id);
-                    }
-                    if (results.length != 0) {
-                        const deleteQ = `DELETE FROM comments WHERE post_id=?`;
-                        db.query(deleteQ, [post_id], (err) => {
-                            if (err) {
-                                reject(err);
-                            } else {
-                                resolve();
-                            }
-                        });
-                    } else {
-                        resolve();
-                    }
-                }
-            });
-        });
+        let comments = await this.findByPostId(post_id);
+        for (let i = 0; i < comments.length; i++) {
+            await this.deleteById(comments[i].id);
+        }
+    }
+
+    static async deleteByUserId(user_id) {
+        let comments = await this.findByUserId(user_id);
+        for (let i = 0; i < comments.length; i++) {
+            await this.deleteById(comments[i].id);
+        }
     }
 
     static async save(comment) {
