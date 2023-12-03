@@ -1,0 +1,17 @@
+API_PORT=5000
+
+TOKEN_KEY=VerySecretUsofKey
+
+COOKIE_KEY=VerySecretUsofKey
+
+DB_HOST=localhost
+
+DB_USER=mcherednyc
+
+DB_DATABASE=ucode_usof_backend
+
+DB_PASSWORD=securepass
+
+MAIL_USER=mailer@gmail.com
+
+MAIL_PASS=pass
