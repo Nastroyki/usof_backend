@@ -54,6 +54,7 @@ router.get('/:id', async (req, res) => {
         console.log(err);
     }
 });
+
 router.post('/', auth, async (req, res) => {
     if(req.user.role != 'admin'){
         return res.status(403).send("Access denied");
@@ -72,13 +73,13 @@ router.post('/', auth, async (req, res) => {
         const loginCheck = await User.findByLogin(login);
 
         if (loginCheck.id != 0) {
-            return res.status(409).send("User Already Exist. Please Login");
+            return res.status(409).send("User Already Exist");
         }
 
         const emailCheck = await User.findByEmail(email);
 
         if (emailCheck.id != 0) {
-            return res.status(409).send("Email Already Exist. Please Login");
+            return res.status(409).send("Email Already Exist");
         }
 
         if (role != 'admin' && role != 'user') {
@@ -100,6 +101,8 @@ router.post('/', auth, async (req, res) => {
     }
 });
 router.patch('/avatar', auth, async (req, res) => {
+    let user = await User.findById(req.user.user_id);
+
     try {
         if (!req.files) {
             return res.status(400).send("No files uploaded");
@@ -125,15 +128,14 @@ router.patch('/avatar', auth, async (req, res) => {
                         height: size,
                         fit: 'cover',
                         position: 'center'
-                    }).toFormat('jpg').toFile(process.cwd() + `/avatars/${req.user.login}.jpg`, (err, info) => {
+                    }).toFormat('jpg').toFile(process.cwd() + `/avatars/${user.login}.jpg`, (err, info) => {
                         if (err) {
                             console.error(err);
                             res.status(400).send("Error");
                             return;
                         }
                         // All good
-                        let user = User.findById(req.user.id);
-                        user.profile_picture = `/avatars/${req.user.login}.jpg`;
+                        user.profile_picture = user.login;
                         User.save(user);
                         res.status(200).send("Success");
                     });
@@ -142,6 +144,8 @@ router.patch('/avatar', auth, async (req, res) => {
         console.log(err);
     }
 });
+
+
 
 router.patch('/:id', auth, async (req, res) => {
     if(!(req.user.role == 'admin' || req.user.user_id == req.params.id)){

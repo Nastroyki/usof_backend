@@ -34,7 +34,7 @@ class CommentAnswer extends Model {
     }
 
     static async findByCommentId(comment_id) {
-        let results = await super.findBy('comment_id', comment_id, 'comment_answer');
+        let results = await super.find(comment_id, 'comment_answer', 'comment_id')
         let commentAnswers = [];
         for (let i = 0; i < results.length; i++) {
             let commentAnswer = new CommentAnswer();
@@ -49,7 +49,7 @@ class CommentAnswer extends Model {
     }
 
     static async findByUserId(user_id) {
-        let results = await super.findBy('user_id', user_id, 'comment_answer');
+        let results = await super.find(user_id, 'comment_answer', 'user_id')
         let commentAnswers = [];
         for (let i = 0; i < results.length; i++) {
             let commentAnswer = new CommentAnswer();
@@ -82,8 +82,8 @@ class CommentAnswer extends Model {
     }
 
     static async save(commentAnswer) {
-        await super.save(commentAnswer, 'comment_answer');
-        return await this.findById(commentAnswer.id);
+        let id = await super.save(commentAnswer, 'comment_answer');
+        return await this.findById(id);
     }
 }
 

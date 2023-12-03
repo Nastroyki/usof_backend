@@ -54,21 +54,35 @@ class Post extends Model {
         } else {
             query += ` ORDER BY ${sort} ${order}`;
         }
-        query += ` LIMIT ${(page - 1) * limit}, ${limit}`;
+        return new Promise((resolve, reject) => {
+            let len;
+            db.query(query, (err, results) => {
+                if (err) {
+                    reject(err);
+                }
+                len = results.length;
 
-        let results = await db.query(query);
-        let posts = [];
-        for (let i = 0; i < results.length; i++) {
-            let post = new Post();
-            post.id = results[i].id;
-            post.user_id = results[i].user_id;
-            post.title = results[i].title;
-            post.publish_date = results[i].publish_date;
-            post.status = results[i].status;
-            post.content = results[i].content;
-            posts.push(post);
-        }
-        return posts;
+                query += ` LIMIT ${(page - 1) * limit}, ${limit}`;
+
+                db.query(query, (err, results) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    let posts = [];
+                    for (let i = 0; i < results.length; i++) {
+                        let post = new Post();
+                        post.id = results[i].id;
+                        post.user_id = results[i].user_id;
+                        post.title = results[i].title;
+                        post.publish_date = results[i].publish_date;
+                        post.status = results[i].status;
+                        post.content = results[i].content;
+                        posts.push(post);
+                    }
+                    resolve({ posts, len, limit });
+                });
+            });
+        });
     }
 
     static async findById(id) {
@@ -115,8 +129,8 @@ class Post extends Model {
     }
 
     static async save(post) {
-        await super.save(post, 'posts');
-        return await this.findById(post.id);
+        let id = await super.save(post, 'posts');
+        return await this.findById(id);
     }
 }
 

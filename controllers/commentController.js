@@ -34,12 +34,27 @@ router.get('/:id/likes', async (req, res) => {
     }
 });
 
+// router.get('/:id/like/:user_id', async (req, res) => {
+//     try {
+//         const result = await Like.userPostLike(req.params.user_id, req.params.id);
+//         res.status(200).json(result);
+//     } catch (err) {
+//         console.log(err);
+//     }
+// });
+
+router.get('/:id/likes/:user_id', async (req, res) => {
+    try {
+        const result = await Like.userCommentLike(req.params.user_id, req.params.id);
+        res.status(200).json(result);
+    } catch (err) {
+        console.log(err);
+    }
+});
+
 router.get('/:id/answers', async (req, res) => {
     try {
         const commentAnswers = await CommentAnswer.findByCommentId(req.params.id);
-        if(commentAnswers.length == 0){
-            return res.status(404).send("Comment answers not found");
-        }
         res.status(200).json(commentAnswers);
     } catch (err) {
         console.log(err);
@@ -55,7 +70,7 @@ router.post('/:id/answer', auth, async (req, res) => {
         }
 
         const commentAnswer = await CommentAnswer.save({
-            user_id: req.user.id,
+            user_id: req.user.user_id,
             comment_id: req.params.id,
             publish_date: new Date(),
             content
@@ -67,31 +82,46 @@ router.post('/:id/answer', auth, async (req, res) => {
     }
 });
 
-router.post('/:id/likes', async (req, res) => {
+router.post('/:id/likes', auth, async (req, res) => {
     try {
         const { type } = req.body;
-
-        if (!(type)) {
-            return res.status(400).send("All input is required");
+        Like.deleteUserLikeComment(req.user.user_id, req.params.id);
+        if (!(type == 'like' || type == 'dislike')) {
+            return res.status(201).send("Deleted");
         }
-
-        if (type != 'like' && type != 'dislike') {
-            return res.status(400).send("Wrong type");
-        }
-
-        const like = await Like.save({
-            user_id: req.user.id,
+        await Like.save({
+            user_id: req.user.user_id,
             publish_date: new Date(),
-            post_id: 0,
+            post_id: null,
             comment_id: req.params.id,
             type
         });
-
-        res.status(201).json(like);
-    } catch (err) {
+        res.status(201).send("Success");
+    }
+    catch (err) {
         console.log(err);
     }
 });
+// router.post('/:id/like', auth, async (req, res) => {
+//     try {
+//         const { type } = req.body;
+//         Like.deleteUserLike(req.user.user_id, req.params.id);
+//         if (!(type == 'like' || type == 'dislike')) {
+//             return res.status(201).send("Deleted");
+//         }
+//         await Like.save({
+//             user_id: req.user.user_id,
+//             publish_date: new Date(),
+//             post_id: req.params.id,
+//             comment_id: null,
+//             type
+//         });
+//         res.status(201).send("Success");
+//     }
+//     catch (err) {
+//         console.log(err);
+//     }
+// });
 
 router.patch('/:id', auth, async (req, res) => {
     try {

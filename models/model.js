@@ -30,6 +30,18 @@ class Model {
             });
         });
     }
+    static async findByBegin(value, table, field){
+        const selectQ = `SELECT * FROM ${table} WHERE ${field} LIKE ?`;
+        return new Promise((resolve, reject) => {
+            db.query(selectQ, [value + '%'], (err, results) => {
+                if(err){
+                    reject(err);
+                }
+                resolve(results);
+            });
+        });
+    }
+
     static async delete(value, table, field = 'id') {
         const selectQ = `SELECT * FROM ${table} WHERE ${field}=?`;
         return new Promise((resolve, reject) => {
@@ -54,22 +66,30 @@ class Model {
         });
     }
     static async save(data, table) {
-        const id = data.id;
-        if (id && id >= 0) {
-            const updateQ = `UPDATE ${table} SET ? WHERE id = ?`;
-            db.query(updateQ, [data, id], (err, result) => {
+        return new Promise((resolve, reject) => {
+            const id = data.id;
+            if (id && id >= 0) {
+                const updateQ = `UPDATE ${table} SET ? WHERE id = ?`;
+                db.query(updateQ, [data, id], (err, result) => {
+                    if (err) {
+                        reject(err);
+                    }
+                });
+            } else {
+                const insertQ = `INSERT INTO ${table} SET ?`;
+                db.query(insertQ, [data], (err, result) => {
+                    if (err) {
+                        reject(err);
+                    }
+                });
+            }
+            db.query('SELECT LAST_INSERT_ID() as id', (err, result) => {
                 if (err) {
-                    throw err;
+                    reject(err);
                 }
+                resolve(result[0].id);
             });
-        } else {
-            const insertQ = `INSERT INTO ${table} SET ?`;
-            db.query(insertQ, [data], (err, result) => {
-                if (err) {
-                    throw err;
-                }
-            });
-        }
+        });
     }
 }
 module.exports = { Model, db };

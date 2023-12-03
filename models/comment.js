@@ -36,7 +36,7 @@ class Comment extends Model {
     }
 
     static async findByPostId(post_id) {
-        let results = await super.findBy('post_id', post_id, 'comments');
+        let results = await super.find(post_id, 'comments', 'post_id');
         let comments = [];
         for (let i = 0; i < results.length; i++) {
             let comment = new Comment();
@@ -51,7 +51,7 @@ class Comment extends Model {
     }
 
     static async findByUserId(user_id) {
-        let results = await super.findBy('user_id', user_id, 'comments');
+        let results = await super.find(user_id, 'comments', 'user_id');
         let comments = [];
         for (let i = 0; i < results.length; i++) {
             let comment = new Comment();
@@ -86,8 +86,8 @@ class Comment extends Model {
     }
 
     static async save(comment) {
-        await super.save(comment, 'comments');
-        return await this.findById(comment.id);
+        let id = await super.save(comment, 'comments');
+        return await this.findById(id);
     }
 }
 
